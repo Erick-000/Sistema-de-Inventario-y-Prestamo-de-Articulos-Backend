@@ -29,19 +29,23 @@ export class SeedService implements OnModuleInit {
     if (adminEmail && adminPassword) {
       const exists = await this.userModel.findOne({ correo: adminEmail });
       if (!exists) {
-        await this.userModel.create({
-          nombreCompleto: 'Administrador Sistema',
-          tipoDocumento: 'CC',
-          numeroDocumento: '1000000000',
-          correo: adminEmail,
-          hashContrasena: this.hashPassword(adminPassword),
-          rol: 'admin',
-          bloqueado: false,
-          debeCambiarContrasena: true,
-          createdAt: now,
-          updatedAt: now,
-        });
-        console.log(`Admin creado: ${adminEmail}`);
+        try {
+          await this.userModel.create({
+            nombreCompleto: 'Administrador Sistema',
+            tipoDocumento: 'CC',
+            numeroDocumento: 'ADMIN-' + Date.now(),
+            correo: adminEmail,
+            hashContrasena: this.hashPassword(adminPassword),
+            rol: 'admin',
+            bloqueado: false,
+            debeCambiarContrasena: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+          console.log(`Admin creado: ${adminEmail}`);
+        } catch (err) {
+          console.error('Error al crear admin:', (err as Error).message);
+        }
       }
     }
 
@@ -51,20 +55,24 @@ export class SeedService implements OnModuleInit {
     if (docenteEmail && docentePassword) {
       const exists = await this.userModel.findOne({ correo: docenteEmail });
       if (!exists) {
-        await this.userModel.create({
-          nombreCompleto: 'Docente',
-          tipoDocumento: 'CC',
-          numeroDocumento: '2000000001',
-          correo: docenteEmail,
-          hashContrasena: this.hashPassword(docentePassword),
-          rol: 'docente',
-          programa: 'Facultad de Ingenieria',
-          bloqueado: false,
-          debeCambiarContrasena: true,
-          createdAt: now,
-          updatedAt: now,
-        });
-        console.log(`Docente creado: ${docenteEmail}`);
+        try {
+          await this.userModel.create({
+            nombreCompleto: 'Docente',
+            tipoDocumento: 'CC',
+            numeroDocumento: 'DOC-' + Date.now(),
+            correo: docenteEmail,
+            hashContrasena: this.hashPassword(docentePassword),
+            rol: 'docente',
+            programa: 'Facultad de Ingenieria',
+            bloqueado: false,
+            debeCambiarContrasena: true,
+            createdAt: now,
+            updatedAt: now,
+          });
+          console.log(`Docente creado: ${docenteEmail}`);
+        } catch (err) {
+          console.error('Error al crear docente:', (err as Error).message);
+        }
       }
     }
   }
