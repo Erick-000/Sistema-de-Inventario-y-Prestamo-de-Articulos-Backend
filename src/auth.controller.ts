@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Req,
 } from '@nestjs/common';
@@ -34,5 +35,18 @@ export class AuthController {
   async me(@Req() req: { user?: { id?: string } }) {
     if (!req.user?.id) throw new BadRequestException('Invalid user');
     return this.authService.me(req.user.id);
+  }
+
+  @Patch('cambiar-contrasena')
+  async cambiarContrasena(
+    @Req() req: { user?: { id?: string } },
+    @Body() body: { actual: string; nueva: string },
+  ) {
+    if (!req.user?.id) throw new BadRequestException('Invalid user');
+    return this.authService.cambiarContrasena(
+      req.user.id,
+      body.actual,
+      body.nueva,
+    );
   }
 }

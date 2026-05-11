@@ -37,6 +37,7 @@ export class SeedService implements OnModuleInit {
           hashContrasena: this.hashPassword(adminPassword),
           rol: 'admin',
           bloqueado: false,
+          debeCambiarContrasena: true,
           createdAt: now,
           updatedAt: now,
         });
@@ -59,6 +60,7 @@ export class SeedService implements OnModuleInit {
           rol: 'docente',
           programa: 'Facultad de Ingenieria',
           bloqueado: false,
+          debeCambiarContrasena: true,
           createdAt: now,
           updatedAt: now,
         });

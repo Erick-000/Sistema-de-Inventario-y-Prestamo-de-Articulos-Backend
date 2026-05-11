@@ -61,6 +61,9 @@ export class User {
 
   @Prop({ default: false, index: true })
   bloqueado!: boolean;
+
+  @Prop({ default: true })
+  debeCambiarContrasena!: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

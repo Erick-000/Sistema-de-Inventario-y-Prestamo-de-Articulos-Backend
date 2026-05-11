@@ -14,6 +14,7 @@ export type AuthUser = {
 export type LoginResponse = {
   token: string;
   user: AuthUser;
+  debeCambiarContrasena: boolean;
 };
 
 @Injectable()
@@ -109,6 +110,7 @@ export class AuthService {
       correo: unknown;
       bloqueado?: unknown;
       hashContrasena?: unknown;
+      debeCambiarContrasena?: unknown;
     };
 
     if (u.bloqueado) {
@@ -145,10 +147,14 @@ export class AuthService {
       exp,
     });
 
-    return { token, user: authUser };
+    return {
+      token,
+      user: authUser,
+      debeCambiarContrasena: Boolean(u.debeCambiarContrasena),
+    };
   }
 
-  async me(id: string): Promise<{ user: AuthUser & { blocked?: boolean } }> {
+  async me(id: string): Promise<{ user: AuthUser & { blocked?: boolean; debeCambiarContrasena?: boolean } }> {
     const user = await this.userModel.findById(id).lean();
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
 
@@ -158,6 +164,7 @@ export class AuthService {
       nombreCompleto: unknown;
       correo: unknown;
       bloqueado?: boolean;
+      debeCambiarContrasena?: boolean;
     };
 
     return {
@@ -167,7 +174,26 @@ export class AuthService {
         name: String(u.nombreCompleto),
         email: String(u.correo),
         blocked: Boolean(u.bloqueado),
+        debeCambiarContrasena: Boolean(u.debeCambiarContrasena),
       },
     };
+  }
+
+  async cambiarContrasena(
+    userId: string,
+    actual: string,
+    nueva: string,
+  ) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+
+    const ok = this.verifyPassword(actual, user.hashContrasena);
+    if (!ok) throw new UnauthorizedException('Contrasena actual incorrecta');
+
+    user.hashContrasena = this.hashPassword(nueva);
+    user.debeCambiarContrasena = false;
+    await user.save();
+
+    return { ok: true };
   }
 }
