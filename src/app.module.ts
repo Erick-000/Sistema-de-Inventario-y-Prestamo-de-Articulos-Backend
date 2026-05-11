@@ -44,6 +44,7 @@ import {
   ArticleCategorySchema,
 } from './schemas/article-category.schema';
 import { AuditLog, AuditLogSchema } from './schemas/audit-log.schema';
+import { SeedService } from './seed.service';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AuditLog, AuditLogSchema } from './schemas/audit-log.schema';
     RoomReservationsService,
     ArticleCategoriesService,
     AuditService,
+    SeedService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
