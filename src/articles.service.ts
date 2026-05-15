@@ -43,11 +43,30 @@ function normalizeObjectStatus(value: unknown) {
     .trim()
     .toUpperCase();
   if (!status) return ArticleObjectStatus.OPERATIONAL;
+  if (
+    status === 'DISPONIBLE' ||
+    status === 'ACTIVO' ||
+    status === 'BUENO' ||
+    status === 'FUNCIONAL'
+  ) {
+    return ArticleObjectStatus.OPERATIONAL;
+  }
+  if (
+    status === 'DAÑADO' ||
+    status === 'DANADO' ||
+    status === 'REPARACION' ||
+    status === 'REPARACIÓN'
+  ) {
+    return ArticleObjectStatus.MAINTENANCE;
+  }
+  if (status === 'RETIRADO' || status === 'INACTIVO') {
+    return ArticleObjectStatus.RETIRED;
+  }
   if (status === ArticleObjectStatus.OPERATIONAL) return ArticleObjectStatus.OPERATIONAL;
   if (status === ArticleObjectStatus.MAINTENANCE) return ArticleObjectStatus.MAINTENANCE;
   if (status === ArticleObjectStatus.RETIRED) return ArticleObjectStatus.RETIRED;
   throw new BadRequestException(
-    `Estado inválido: ${String(value)}. Usa OPERATIVO, MANTENIMIENTO o BAJA`,
+    `Estado inválido: ${String(value)}. Usa OPERATIVO, MANTENIMIENTO, BAJA o Disponible`,
   );
 }
 
