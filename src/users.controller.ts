@@ -36,4 +36,17 @@ export class UsersController {
       nombre: req.user?.name,
     });
   }
+
+  @Patch(':id/password')
+  @Roles('admin')
+  async updateTeacherPassword(
+    @Req() req: { user?: { id?: string; name?: string } },
+    @Param('id') id: string,
+    @Body() body: { password?: string },
+  ) {
+    return this.usersService.updateTeacherPassword(id, String(body?.password ?? ''), {
+      id: req.user?.id,
+      nombre: req.user?.name,
+    });
+  }
 }

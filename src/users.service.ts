@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import { randomBytes, scryptSync } from 'crypto';
 import { User, UserDocument, UserRole } from './schemas/user.schema';
 import { AuditActor, AuditService } from './audit.service';
 import { AuditEntityType } from './schemas/audit-log.schema';
@@ -21,6 +22,12 @@ export class UsersService {
     private readonly reservationModel: Model<RoomReservationDocument>,
     private readonly auditService: AuditService,
   ) {}
+
+  private hashPassword(plain: string) {
+    const salt = randomBytes(16).toString('base64url');
+    const derived = scryptSync(String(plain), salt, 32).toString('base64url');
+    return `scrypt$${salt}$${derived}`;
+  }
 
   async findTeachers() {
     return this.userModel
@@ -66,6 +73,41 @@ export class UsersService {
       rol: current.rol,
       bloqueado: current.bloqueado,
     };
+  }
+
+  async updateTeacherPassword(
+    id: string,
+    newPassword: string,
+    actor?: AuditActor,
+  ) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid id');
+    }
+    const password = String(newPassword ?? '');
+    if (password.length < 6) {
+      throw new BadRequestException('La contraseña debe tener al menos 6 caracteres');
+    }
+
+    const current = await this.userModel.findById(id);
+    if (!current) throw new NotFoundException('User not found');
+    if (current.rol !== UserRole.TEACHER) {
+      throw new BadRequestException('Solo se puede cambiar la contraseña de docentes');
+    }
+
+    current.hashContrasena = this.hashPassword(password);
+    current.debeCambiarContrasena = true;
+    await current.save();
+
+    await this.auditService.record({
+      accion: 'user.password.changed_by_admin',
+      entidadTipo: AuditEntityType.USER,
+      entidadId: current._id,
+      entidadNombre: current.nombreCompleto,
+      actor,
+      metadata: { rol: current.rol },
+    });
+
+    return { ok: true };
   }
 
   async profile(id: string) {

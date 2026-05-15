@@ -36,6 +36,24 @@ export class LoanItem {
 
 export const LoanItemSchema = SchemaFactory.createForClass(LoanItem);
 
+@Schema({ _id: false })
+export class LoanActSignature {
+  @Prop({ required: true, trim: true })
+  dataUrl!: string;
+
+  @Prop({ required: true, trim: true })
+  signerName!: string;
+
+  @Prop({ trim: true })
+  signerId?: string;
+
+  @Prop({ required: true })
+  signedAt!: Date;
+}
+
+export const LoanActSignatureSchema =
+  SchemaFactory.createForClass(LoanActSignature);
+
 @Schema({ timestamps: true, collection: 'loans' })
 export class Loan {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
@@ -78,6 +96,9 @@ export class Loan {
 
   @Prop({ trim: true })
   returnNote?: string;
+
+  @Prop({ type: LoanActSignatureSchema })
+  actaFirma?: LoanActSignature;
 }
 
 export const LoanSchema = SchemaFactory.createForClass(Loan);

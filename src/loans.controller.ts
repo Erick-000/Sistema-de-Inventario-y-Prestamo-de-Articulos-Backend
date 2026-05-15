@@ -120,4 +120,25 @@ export class LoansController {
       },
     );
   }
+
+  @Patch(':id/sign-act')
+  @Roles('admin', 'docente')
+  async signAct(
+    @Req() req: { user?: { id?: string; name?: string; role?: string } },
+    @Param('id') id: string,
+    @Body() body: { signatureDataUrl?: string; signerName?: string },
+  ) {
+    return this.loansService.signAct(
+      id,
+      {
+        signatureDataUrl: body?.signatureDataUrl,
+        signerName: body?.signerName,
+      },
+      {
+        id: req.user?.id,
+        nombre: req.user?.name,
+        role: req.user?.role,
+      },
+    );
+  }
 }

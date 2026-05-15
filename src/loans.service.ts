@@ -579,6 +579,55 @@ export class LoansService {
     return loan.toObject();
   }
 
+  async signAct(
+    id: string,
+    input?: { signatureDataUrl?: string; signerName?: string },
+    actor?: AuditActor & { role?: string },
+  ) {
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('Invalid id');
+
+    const signatureDataUrl = String(input?.signatureDataUrl ?? '').trim();
+    if (!signatureDataUrl.startsWith('data:image/png;base64,')) {
+      throw new BadRequestException('Firma inválida');
+    }
+    if (signatureDataUrl.length > 250_000) {
+      throw new BadRequestException('La firma es demasiado grande');
+    }
+
+    const loan = await this.loanModel.findById(id);
+    if (!loan) throw new NotFoundException('Loan not found');
+
+    if (
+      actor?.role === UserRole.TEACHER &&
+      String(loan.docenteId) !== String(actor.id)
+    ) {
+      throw new BadRequestException('No puedes firmar un préstamo que no es tuyo');
+    }
+
+    const signerName =
+      input?.signerName?.trim() || actor?.nombre?.trim() || loan.nombreDocente;
+
+    loan.actaFirma = {
+      dataUrl: signatureDataUrl,
+      signerName,
+      signerId: actor?.id,
+      signedAt: new Date(),
+    };
+    await loan.save();
+
+    await this.auditService.record({
+      accion: 'loan.act.signed',
+      entidadTipo: AuditEntityType.LOAN,
+      entidadId: loan._id,
+      entidadNombre: loan.nombreDocente,
+      actor,
+      metadata: { signerName, signedAt: loan.actaFirma.signedAt },
+    });
+
+    return loan.toObject();
+  }
+
   async cancelAsAdmin(id: string, actor?: AuditActor) {
     if (!Types.ObjectId.isValid(id))
       throw new BadRequestException('Invalid id');
