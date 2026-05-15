@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'crypto';
@@ -179,11 +179,43 @@ export class AuthService {
     };
   }
 
+  async validateSessionUser(id: string) {
+    const user = await this.userModel
+      .findById(id)
+      .select('rol nombreCompleto correo bloqueado debeCambiarContrasena')
+      .lean();
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+
+    const u = user as unknown as {
+      _id: unknown;
+      rol: unknown;
+      nombreCompleto: unknown;
+      correo: unknown;
+      bloqueado?: boolean;
+      debeCambiarContrasena?: boolean;
+    };
+
+    if (u.bloqueado) {
+      throw new UnauthorizedException('Usuario bloqueado');
+    }
+
+    return {
+      id: String(u._id),
+      role: String(u.rol),
+      name: String(u.nombreCompleto),
+      email: String(u.correo),
+      debeCambiarContrasena: Boolean(u.debeCambiarContrasena),
+    };
+  }
+
   async cambiarContrasena(
     userId: string,
     actual: string,
     nueva: string,
   ) {
+    if (String(nueva ?? '').length < 6) {
+      throw new BadRequestException('La nueva contraseña debe tener al menos 6 caracteres');
+    }
     const user = await this.userModel.findById(userId);
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
 
