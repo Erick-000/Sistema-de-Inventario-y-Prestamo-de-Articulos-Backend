@@ -38,6 +38,34 @@ function normalizeCategory(value: unknown) {
   return category;
 }
 
+function normalizeObjectStatus(value: unknown) {
+  const status = String(value ?? '')
+    .trim()
+    .toUpperCase();
+  if (!status) return ArticleObjectStatus.OPERATIONAL;
+  if (status === ArticleObjectStatus.OPERATIONAL) return ArticleObjectStatus.OPERATIONAL;
+  if (status === ArticleObjectStatus.MAINTENANCE) return ArticleObjectStatus.MAINTENANCE;
+  if (status === ArticleObjectStatus.RETIRED) return ArticleObjectStatus.RETIRED;
+  throw new BadRequestException(
+    `Estado inválido: ${String(value)}. Usa OPERATIVO, MANTENIMIENTO o BAJA`,
+  );
+}
+
+function toBadRequestMessage(err: unknown) {
+  const maybe = err as { message?: unknown; code?: unknown; name?: unknown; errors?: unknown };
+  const message = String(maybe?.message ?? err);
+  if (maybe?.code === 11000) {
+    return 'Uno de los seriales ya está registrado o está repetido en el archivo';
+  }
+  if (maybe?.name === 'ValidationError') {
+    return message;
+  }
+  if (message.includes('E11000')) {
+    return 'Uno de los seriales ya está registrado o está repetido en el archivo';
+  }
+  return null;
+}
+
 @Injectable()
 export class ArticlesService {
   constructor(
@@ -101,7 +129,7 @@ export class ArticlesService {
         ubicacion: input.ubicacion,
         responsable: input.responsable,
         notas: input.notas,
-        estadoObjeto: input.estadoObjeto ?? ArticleObjectStatus.OPERATIONAL,
+        estadoObjeto: normalizeObjectStatus(input.estadoObjeto),
         stockTotal: Math.floor(input.stockTotal),
         stockDisponible: Math.floor(input.stockDisponible),
         stockMinimo: Math.floor(input.stockMinimo ?? 0),
@@ -127,10 +155,8 @@ export class ArticlesService {
       });
       return created.toObject();
     } catch (err) {
-      const msg = String((err as { message?: unknown } | null)?.message ?? err);
-      if (msg.includes('E11000') && msg.includes('serial')) {
-        throw new BadRequestException('Serial ya registrado');
-      }
+      const badRequestMessage = toBadRequestMessage(err);
+      if (badRequestMessage) throw new BadRequestException(badRequestMessage);
       throw err;
     }
   }
@@ -181,7 +207,7 @@ export class ArticlesService {
         ubicacion: input.ubicacion,
         responsable: input.responsable,
         notas: input.notas,
-        estadoObjeto: input.estadoObjeto ?? ArticleObjectStatus.OPERATIONAL,
+        estadoObjeto: normalizeObjectStatus(input.estadoObjeto),
         stockTotal: Math.floor(stockTotal),
         stockDisponible: Math.floor(stockDisponible),
         stockMinimo: Math.floor(stockMinimo),
@@ -210,10 +236,8 @@ export class ArticlesService {
       );
       return created.map((doc) => doc.toObject());
     } catch (err) {
-      const msg = String((err as { message?: unknown } | null)?.message ?? err);
-      if (msg.includes('E11000') && msg.includes('serial')) {
-        throw new BadRequestException('Uno de los seriales ya está registrado');
-      }
+      const badRequestMessage = toBadRequestMessage(err);
+      if (badRequestMessage) throw new BadRequestException(badRequestMessage);
       throw err;
     }
   }
@@ -321,10 +345,8 @@ export class ArticlesService {
         },
       });
     } catch (err) {
-      const msg = String((err as { message?: unknown } | null)?.message ?? err);
-      if (msg.includes('E11000') && msg.includes('serial')) {
-        throw new BadRequestException('Serial ya registrado');
-      }
+      const badRequestMessage = toBadRequestMessage(err);
+      if (badRequestMessage) throw new BadRequestException(badRequestMessage);
       throw err;
     }
 
